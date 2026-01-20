@@ -14,7 +14,7 @@ const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444"];
 export default function CategoryPieChart() {
   return (
     <div className="bg-white/70 backdrop-blur rounded-2xl p-6 shadow">
-      <h3 className="font-semibold mb-4 text-gray-800">Expense by Category</h3>
+      <h3  className="font-semibold mb-4 text-gray-800">Expense by Category</h3>
 
       <ResponsiveContainer width="100%" height={260}>
         <PieChart>
