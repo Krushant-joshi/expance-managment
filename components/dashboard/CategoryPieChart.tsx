@@ -9,7 +9,7 @@ const data = [
   { name: "Bills", value: 2600 },
 ];
 
-const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444"];
+// const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444"];
 
 export default function CategoryPieChart() {
   return (
