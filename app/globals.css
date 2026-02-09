@@ -1,8 +1,30 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+ :root {
+  --background: #f7f3ee;
+  --foreground: #1f2937;
+  --surface: #ffffff;
+  --surface-2: #fbf4ea;
+  --border: #e6dccf;
+  --muted: #9a8f80;
+  --muted-2: #b2a596;
+  --accent: #1f2937;
+  --accent-contrast: #f7e7c7;
+  --ring: #cbb48e;
+ }
+
+/* Explicit theme overrides */
+:root[data-theme="dark"] {
+  --background: #0b0f14;
+  --foreground: #e5e7eb;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --border: #1f2937;
+  --muted: #9aa3b2;
+  --muted-2: #7b8796;
+  --accent: #e6d3a8;
+  --accent-contrast: #1f2937;
+  --ring: #6b5a3b;
 }
 
 @theme inline {
@@ -13,10 +35,43 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+/* Dark mode fallbacks for common Tailwind utility classes */
+:root[data-theme="dark"] .bg-white {
+  background-color: var(--surface) !important;
+}
+:root[data-theme="dark"] .bg-gray-50,
+:root[data-theme="dark"] .bg-gray-100 {
+  background-color: var(--surface-2) !important;
+}
+:root[data-theme="dark"] .text-gray-900,
+:root[data-theme="dark"] .text-gray-800,
+:root[data-theme="dark"] .text-slate-900,
+:root[data-theme="dark"] .text-slate-800 {
+  color: var(--foreground) !important;
+}
+:root[data-theme="dark"] .text-gray-700,
+:root[data-theme="dark"] .text-gray-600,
+:root[data-theme="dark"] .text-slate-700,
+:root[data-theme="dark"] .text-slate-600 {
+  color: var(--muted) !important;
+}
+:root[data-theme="dark"] .text-gray-500,
+:root[data-theme="dark"] .text-slate-500,
+:root[data-theme="dark"] .text-slate-400 {
+  color: var(--muted-2) !important;
+}
+:root[data-theme="dark"] .border-gray-100,
+:root[data-theme="dark"] .border-gray-200,
+:root[data-theme="dark"] .border-gray-300,
+:root[data-theme="dark"] .border-slate-200,
+:root[data-theme="dark"] .border-slate-300 {
+  border-color: var(--border) !important;
 }
 
 body {

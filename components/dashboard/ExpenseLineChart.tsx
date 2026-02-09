@@ -9,19 +9,19 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { month: "Jan", expense: 1200 },
-  { month: "Feb", expense: 2100 },
-  { month: "Mar", expense: 800 },
-  { month: "Apr", expense: 1600 },
-  { month: "May", expense: 2400 },
-  { month: "Jun", expense: 1900 },
-];
+type Point = { month: string; expense: number };
 
-export default function ExpenseLineChart() {
+export default function ExpenseLineChart({ data = [] }: { data?: Point[] }) {
   return (
-    <div className="bg-white/70 backdrop-blur rounded-2xl p-6 shadow">
-      <h3 className="font-semibold mb-4 text-gray-800">Monthly Expenses</h3>
+    <div className="bg-[var(--surface)]/80 backdrop-blur rounded-2xl p-6 border border-[var(--border)] shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+      <div className="mb-4">
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+          Trends
+        </p>
+        <h3 className="font-semibold text-[var(--foreground)]">
+          Monthly Expenses
+        </h3>
+      </div>
 
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={data}>
@@ -31,7 +31,7 @@ export default function ExpenseLineChart() {
           <Line
             type="monotone"
             dataKey="expense"
-            stroke="#6366F1"
+            stroke="#9f7e54"
             strokeWidth={4}
             dot={{ r: 4 }}
           />

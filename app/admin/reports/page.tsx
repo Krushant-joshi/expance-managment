@@ -1,6 +1,7 @@
 "use client";
 
 import StatCard from "@/components/dashboard/StatCard";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Calendar } from "lucide-react";
 import {
   LineChart,
@@ -15,42 +16,139 @@ import {
 } from "recharts";
 
 export default function ReportsPage() {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [expenses, setExpenses] = useState<
+    { ExpenseDate: string; Amount: number; categories?: { CategoryName: string } }[]
+  >([]);
+
+  useEffect(() => {
+    fetch("/api/expenses")
+      .then((res) => res.json())
+      .then((data) => setExpenses(data))
+      .catch(() => setExpenses([]));
+  }, []);
+
+  const filteredExpenses = useMemo(() => {
+    if (!startDate && !endDate) return expenses;
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    return expenses.filter((e) => {
+      const d = new Date(e.ExpenseDate);
+      const afterStart = start ? d >= start : true;
+      const beforeEnd = end ? d <= end : true;
+      return afterStart && beforeEnd;
+    });
+  }, [expenses, startDate, endDate]);
+
+  const trendData = useMemo(() => {
+    const buckets = new Map<string, number>();
+    filteredExpenses.forEach((e) => {
+      const d = new Date(e.ExpenseDate);
+      const label = d.toLocaleDateString("en-US", { month: "short" });
+      buckets.set(label, (buckets.get(label) || 0) + Number(e.Amount || 0));
+    });
+    const order = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return order
+      .filter((m) => buckets.has(m))
+      .map((m) => ({ month: m, expense: buckets.get(m) || 0 }));
+  }, [filteredExpenses]);
+
+  const totalExpense = filteredExpenses.reduce(
+    (sum, e) => sum + Number(e.Amount || 0),
+    0,
+  );
+  const avgMonth =
+    trendData.length > 0 ? Math.round(totalExpense / trendData.length) : 0;
+
+  const categoryData = useMemo(() => {
+    const totals = new Map<string, number>();
+    filteredExpenses.forEach((e) => {
+      const name = e.categories?.CategoryName || "Uncategorized";
+      totals.set(name, (totals.get(name) || 0) + Number(e.Amount || 0));
+    });
+    return Array.from(totals.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }, [filteredExpenses]);
+
+  const topCategory =
+    categoryData.length > 0 ? categoryData[0].name : "N/A";
+
+  const transactions = filteredExpenses.length;
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 text-[var(--foreground)]">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-600">Analyze your expense patterns</p>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
+            Reports
+          </h1>
+          <p className="text-[var(--muted)]">Analyze your expense patterns</p>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 shadow">
           <Download size={18} />
           Export Report
         </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 flex gap-4 shadow-sm items-center">
-        <Calendar size={18} className="text-gray-500" />
-        <input type="date" className="border rounded-lg px-3 py-2 text-sm" />
-        <span className="text-gray-400">to</span>
-        <input type="date" className="border rounded-lg px-3 py-2 text-sm" />
+      <div className="bg-[var(--surface)] rounded-xl p-4 flex gap-4 shadow-sm items-center border border-[var(--border)]">
+        <Calendar size={18} className="text-[var(--muted)]" />
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--surface)] text-[var(--foreground)]"
+        />
+        <span className="text-[var(--muted-2)]">to</span>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm bg-[var(--surface)] text-[var(--foreground)]"
+        />
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-6">
-        <StatCard title="Total Expense" value="₹24,800" color="indigo" />
-        <StatCard title="Average / Month" value="₹4,130" color="emerald" />
-        <StatCard title="Highest Category" value="Food" color="amber" />
-        <StatCard title="Transactions" value="38" color="rose" />
+        <StatCard
+          title="Total Expense"
+          value={totalExpense.toLocaleString()}
+          color="indigo"
+        />
+        <StatCard
+          title="Average / Month"
+          value={avgMonth.toLocaleString()}
+          color="emerald"
+        />
+        <StatCard title="Highest Category" value={topCategory} color="amber" />
+        <StatCard title="Transactions" value={transactions.toString()} color="rose" />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-3 gap-6">
         {/* Trend */}
-        <div className="col-span-2 bg-white rounded-2xl p-6 shadow">
-          <h3 className="font-semibold mb-4 text-gray-800">Expense Trend</h3>
+        <div className="col-span-2 bg-[var(--surface)] rounded-2xl p-6 shadow border border-[var(--border)]">
+          <h3 className="font-semibold mb-4 text-[var(--foreground)]">
+            Expense Trend
+          </h3>
 
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={trendData}>
@@ -60,7 +158,7 @@ export default function ReportsPage() {
               <Line
                 type="monotone"
                 dataKey="expense"
-                stroke="#6366F1"
+                stroke="#9f7e54"
                 strokeWidth={4}
               />
             </LineChart>
@@ -68,8 +166,8 @@ export default function ReportsPage() {
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-2xl p-6 shadow">
-          <h3 className="font-semibold mb-4 text-gray-800">
+        <div className="bg-[var(--surface)] rounded-2xl p-6 shadow border border-[var(--border)]">
+          <h3 className="font-semibold mb-4 text-[var(--foreground)]">
             Category Breakdown
           </h3>
 
@@ -82,7 +180,7 @@ export default function ReportsPage() {
                 paddingAngle={5}
               >
                 {categoryData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i]} />
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip />
@@ -94,31 +192,4 @@ export default function ReportsPage() {
   );
 }
 
-/* SUMMARY CARD */
-function ReportCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow">
-      <p className="text-sm opacity-90">{title}</p>
-      <p className="text-2xl font-bold mt-2">{value}</p>
-    </div>
-  );
-}
-
-/* DUMMY DATA */
-const trendData = [
-  { month: "Jan", expense: 3200 },
-  { month: "Feb", expense: 4200 },
-  { month: "Mar", expense: 2800 },
-  { month: "Apr", expense: 5100 },
-  { month: "May", expense: 4600 },
-  { month: "Jun", expense: 4900 },
-];
-
-const categoryData = [
-  { name: "Food", value: 8200 },
-  { name: "Transport", value: 4300 },
-  { name: "Shopping", value: 3800 },
-  { name: "Bills", value: 4500 },
-];
-
-const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EF4444"];
+const COLORS = ["#9f7e54", "#3b7c6e", "#b45352", "#1f2937"];

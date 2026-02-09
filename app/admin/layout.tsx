@@ -7,7 +7,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div
+      suppressHydrationWarning
+      className="min-h-screen flex bg-[var(--background)] text-[var(--foreground)]"
+    >
       {/* Sidebar */}
       <AdminSidebar />
 
@@ -17,7 +20,9 @@ export default function AdminLayout({
         <Navbar />
 
         {/* Page Content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 bg-[var(--background)]">
+          {children}
+        </main>
       </div>
     </div>
   );
