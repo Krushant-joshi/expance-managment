@@ -1,0 +1,374 @@
+"use client";
+
+import {
+  Calendar,
+  DollarSign,
+  FileText,
+  Save,
+  Tag,
+  Wallet,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import SelectField from "@/components/form/SelectField";
+
+type Category = {
+  CategoryID: number;
+  CategoryName: string;
+  IsIncome?: boolean;
+};
+
+type People = {
+  PeopleID: number;
+  PeopleName: string;
+};
+
+type SubCategory = {
+  SubCategoryID: number;
+  SubCategoryName: string;
+};
+
+type Project = {
+  ProjectID: number;
+  ProjectName: string;
+};
+
+type Income = {
+  IncomeID: number;
+  IncomeDate: string;
+  Amount: number;
+  IncomeDetail?: string;
+  Description?: string;
+  CategoryID?: number;
+  SubCategoryID?: number;
+  PeopleID: number;
+  ProjectID?: number;
+};
+
+export default function EditIncomePage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [peoples, setPeoples] = useState<People[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  const [form, setForm] = useState({
+    title: "",
+    amount: "",
+    categoryId: "",
+    subCategoryId: "",
+    peopleId: "",
+    projectId: "",
+    date: "",
+    notes: "",
+  });
+
+  const fetchCategories = useCallback(async () => {
+    const res = await fetch("/api/categories");
+    const data = await res.json();
+    setCategories(data.filter((cat: Category) => Boolean(cat.IsIncome)));
+  }, []);
+
+  const fetchPeoples = useCallback(async () => {
+    const res = await fetch("/api/peoples");
+    const data = await res.json();
+    setPeoples(data);
+  }, []);
+
+  const fetchSubCategories = useCallback(async () => {
+    const res = await fetch("/api/sub-categories");
+    const data = await res.json();
+    setSubCategories(data);
+  }, []);
+
+  const fetchProjects = useCallback(async () => {
+    const res = await fetch("/api/projects");
+    const data = await res.json();
+    setProjects(data);
+  }, []);
+
+  const fetchIncome = useCallback(async () => {
+    const res = await fetch(`/api/incomes/${id}`);
+    const data: Income = await res.json();
+
+    setForm({
+      title: data.IncomeDetail || "",
+      amount: String(data.Amount),
+      categoryId: data.CategoryID?.toString() || "",
+      subCategoryId: data.SubCategoryID?.toString() || "",
+      peopleId: data.PeopleID.toString(),
+      projectId: data.ProjectID?.toString() || "",
+      date: data.IncomeDate.split("T")[0],
+      notes: data.Description || "",
+    });
+  }, [id]);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        await Promise.all([
+          fetchCategories(),
+          fetchPeoples(),
+          fetchSubCategories(),
+          fetchProjects(),
+          fetchIncome(),
+        ]);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    loadAll();
+  }, [
+    fetchCategories,
+    fetchPeoples,
+    fetchSubCategories,
+    fetchProjects,
+    fetchIncome,
+  ]);
+
+  const handleChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.ChangeEvent<HTMLSelectElement>
+      | React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(`/api/incomes/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          IncomeDate: form.date,
+          CategoryID: Number(form.categoryId),
+          SubCategoryID: form.subCategoryId ? Number(form.subCategoryId) : null,
+          PeopleID: Number(form.peopleId),
+          ProjectID: form.projectId ? Number(form.projectId) : null,
+          Amount: Number(form.amount),
+          IncomeDetail: form.title,
+          Description: form.notes,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      alert("Income updated");
+      router.push("/admin/incomes");
+    } catch {
+      alert("Update failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (pageLoading) {
+    return <p className="p-10 text-center text-[var(--muted)]">Loading...</p>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--background)] p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="relative overflow-hidden rounded-3xl bg-[var(--surface)]/70 backdrop-blur border border-[var(--border)] p-8 text-[var(--foreground)] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+          <div className="absolute -right-10 -top-10 w-40 h-40 bg-[var(--surface-2)]/90 rounded-full blur-2xl" />
+          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[var(--surface-2)]/70 rounded-full blur-2xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-3 bg-[var(--accent)] rounded-2xl shadow-[0_12px_24px_rgba(15,23,42,0.18)]">
+                <Wallet className="w-6 h-6 text-[var(--accent-contrast)]" />
+              </div>
+              <h1 className="text-3xl font-semibold text-[var(--foreground)]">
+                Edit Income
+              </h1>
+            </div>
+            <p className="text-[var(--muted)] text-lg">
+              Update your income details
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-[var(--surface)]/85 backdrop-blur-lg rounded-3xl shadow-[0_18px_40px_rgba(15,23,42,0.08)] border border-[var(--border)] text-[var(--foreground)]">
+          <div className="p-8">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField
+                  label="Income Title"
+                  icon={<FileText size={18} />}
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                />
+                <InputField
+                  label="Amount"
+                  type="number"
+                  icon={<DollarSign size={18} />}
+                  name="amount"
+                  value={form.amount}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField
+                  label="Category"
+                  icon={<Tag size={18} />}
+                  name="categoryId"
+                  value={form.categoryId}
+                  onChange={handleChange}
+                  options={categories.map((c) => ({
+                    value: String(c.CategoryID),
+                    label: c.CategoryName,
+                  }))}
+                />
+                <InputField
+                  label="Date"
+                  type="date"
+                  icon={<Calendar size={18} />}
+                  name="date"
+                  value={form.date}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <SelectField
+                label="Received From"
+                icon={<Tag size={18} />}
+                name="peopleId"
+                value={form.peopleId}
+                onChange={handleChange}
+                options={peoples.map((p) => ({
+                  value: String(p.PeopleID),
+                  label: p.PeopleName,
+                }))}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField
+                  label="Sub Category"
+                  icon={<Tag size={18} />}
+                  name="subCategoryId"
+                  value={form.subCategoryId}
+                  onChange={handleChange}
+                  options={subCategories.map((s) => ({
+                    value: String(s.SubCategoryID),
+                    label: s.SubCategoryName,
+                  }))}
+                  required={false}
+                />
+
+                <SelectField
+                  label="Project"
+                  icon={<Tag size={18} />}
+                  name="projectId"
+                  value={form.projectId}
+                  onChange={handleChange}
+                  options={projects.map((p) => ({
+                    value: String(p.ProjectID),
+                    label: p.ProjectName,
+                  }))}
+                  required={false}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
+                  Notes
+                </label>
+                <textarea
+                  rows={4}
+                  name="notes"
+                  value={form.notes}
+                  onChange={handleChange}
+                  className="w-full border-2 border-[var(--border)] rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] bg-[var(--surface)] text-[var(--foreground)]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="px-6 py-3 border border-[var(--border)] rounded-xl text-[var(--foreground)] hover:bg-[var(--surface-2)] transition"
+                >
+                  <X size={18} />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-3 bg-[var(--accent)] text-[var(--accent-contrast)] rounded-xl shadow-[0_12px_24px_rgba(15,23,42,0.18)] hover:opacity-90 transition"
+                >
+                  <Save size={18} />
+                  {loading ? "Updating..." : "Update Income"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputField({
+  label,
+  type = "text",
+  icon,
+  required,
+  value,
+  onChange,
+  prefix,
+  name,
+}: {
+  label: string;
+  type?: string;
+  icon: React.ReactNode;
+  required?: boolean;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  prefix?: string;
+  name: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <div className="relative group">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-2)]">
+          {icon}
+        </span>
+        {prefix && (
+          <span className="absolute left-12 top-1/2 -translate-y-1/2 text-[var(--foreground)] font-semibold">
+            {prefix}
+          </span>
+        )}
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          className={`w-full border-2 border-[var(--border)] rounded-xl ${
+            prefix ? "pl-16" : "pl-12"
+          } pr-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] bg-[var(--surface)] text-[var(--foreground)]`}
+        />
+      </div>
+    </div>
+  );
+}

@@ -26,12 +26,28 @@ const COLORS = [
 
 const ICONS = ["Food", "Cafe", "Travel", "Bills", "Games", "Health", "Books", "Box"];
 
+type CategoryApi = {
+  CategoryID: number;
+  CategoryName: string;
+  expenses?: { Amount: number | string }[];
+};
+
+type CategoryCard = {
+  id: number;
+  name: string;
+  color: string;
+  icon: string;
+  count: number;
+  total: number;
+  trend: string;
+};
+
 export default function CategoriesPage() {
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<"all" | "with" | "empty">("all");
 
@@ -40,7 +56,7 @@ export default function CategoriesPage() {
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => {
-        const mapped = data.map((cat: any, index: number) => {
+        const mapped = (data as CategoryApi[]).map((cat, index: number) => {
           const expenses = cat.expenses || [];
 
           return {
@@ -50,7 +66,7 @@ export default function CategoriesPage() {
             icon: ICONS[index % ICONS.length],
             count: expenses.length,
             total: expenses.reduce(
-              (sum: number, e: any) => sum + Number(e.Amount || 0),
+              (sum: number, e) => sum + Number(e.Amount || 0),
               0,
             ),
             trend: "0%",
@@ -92,12 +108,12 @@ export default function CategoriesPage() {
   return (
     <div
       suppressHydrationWarning
-      className="min-h-screen bg-[var(--background)] p-8"
+      className="min-h-screen bg-[var(--background)] px-0 py-1 sm:py-2"
     >
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="bg-[var(--surface)]/80 backdrop-blur rounded-3xl p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] border border-[var(--border)]">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
                 Categories
@@ -149,7 +165,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Search & Filter */}
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col gap-4 md:flex-row">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--muted-2)]" />
             <input
@@ -178,7 +194,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Category Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-6">
           {filteredCategories.map((cat, i) => {
             const isPositiveTrend = cat.trend.startsWith("+");
             const isHovered = hoveredCard === i;

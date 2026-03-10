@@ -5,7 +5,13 @@ type Item = {
   amount: string;
 };
 
-export default function RecentExpenses({ items = [] }: { items?: Item[] }) {
+export default function RecentExpenses({
+  items = [],
+  heading = "Recent Expenses",
+}: {
+  items?: Item[];
+  heading?: string;
+}) {
   return (
     <div className="bg-[var(--surface)]/80 backdrop-blur rounded-2xl p-6 border border-[var(--border)] shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
       <div className="mb-4">
@@ -13,7 +19,7 @@ export default function RecentExpenses({ items = [] }: { items?: Item[] }) {
           Latest Activity
         </p>
         <h3 className="font-semibold text-[var(--foreground)]">
-          Recent Expenses
+          {heading}
         </h3>
       </div>
 

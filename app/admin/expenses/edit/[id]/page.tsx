@@ -10,8 +10,9 @@ import {
   X,
 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import SelectField from "@/components/form/SelectField";
 
 /* ================= TYPES ================= */
 
@@ -25,6 +26,16 @@ type People = {
   PeopleName: string;
 };
 
+type SubCategory = {
+  SubCategoryID: number;
+  SubCategoryName: string;
+};
+
+type Project = {
+  ProjectID: number;
+  ProjectName: string;
+};
+
 type Expense = {
   ExpenseID: number;
   ExpenseDate: string;
@@ -32,7 +43,9 @@ type Expense = {
   ExpenseDetail?: string;
   Description?: string;
   CategoryID?: number;
+  SubCategoryID?: number;
   PeopleID: number;
+  ProjectID?: number;
   PaymentMethod?: string | null;
 };
 
@@ -48,6 +61,8 @@ export default function EditExpensePage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [peoples, setPeoples] = useState<People[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -56,7 +71,9 @@ export default function EditExpensePage() {
     title: "",
     amount: "",
     categoryId: "",
+    subCategoryId: "",
     peopleId: "",
+    projectId: "",
     date: "",
     notes: "",
     paymentMethod: "",
@@ -64,31 +81,31 @@ export default function EditExpensePage() {
 
   /* ============ FETCH DATA ============ */
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async () => {
-    try {
-      await Promise.all([fetchCategories(), fetchPeoples(), fetchExpense()]);
-    } finally {
-      setPageLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const res = await fetch("/api/categories");
     const data = await res.json();
     setCategories(data);
-  };
+  }, []);
 
-  const fetchPeoples = async () => {
+  const fetchPeoples = useCallback(async () => {
     const res = await fetch("/api/peoples");
     const data = await res.json();
     setPeoples(data);
-  };
+  }, []);
 
-  const fetchExpense = async () => {
+  const fetchSubCategories = useCallback(async () => {
+    const res = await fetch("/api/sub-categories");
+    const data = await res.json();
+    setSubCategories(data);
+  }, []);
+
+  const fetchProjects = useCallback(async () => {
+    const res = await fetch("/api/projects");
+    const data = await res.json();
+    setProjects(data);
+  }, []);
+
+  const fetchExpense = useCallback(async () => {
     const res = await fetch(`/api/expenses/${id}`);
     const data: Expense = await res.json();
 
@@ -96,12 +113,33 @@ export default function EditExpensePage() {
       title: data.ExpenseDetail || "",
       amount: String(data.Amount),
       categoryId: data.CategoryID?.toString() || "",
+      subCategoryId: data.SubCategoryID?.toString() || "",
       peopleId: data.PeopleID.toString(),
+      projectId: data.ProjectID?.toString() || "",
       date: data.ExpenseDate.split("T")[0],
       notes: data.Description || "",
       paymentMethod: data.PaymentMethod || "",
     });
-  };
+  }, [id]);
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        await Promise.all([fetchCategories(), fetchPeoples(), fetchExpense()]);
+        await Promise.all([fetchSubCategories(), fetchProjects()]);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    loadAll();
+  }, [
+    fetchCategories,
+    fetchPeoples,
+    fetchExpense,
+    fetchSubCategories,
+    fetchProjects,
+  ]);
 
   /* ============ FORM HANDLER ============ */
 
@@ -131,7 +169,9 @@ export default function EditExpensePage() {
         body: JSON.stringify({
           ExpenseDate: form.date,
           CategoryID: Number(form.categoryId),
+          SubCategoryID: form.subCategoryId ? Number(form.subCategoryId) : null,
           PeopleID: Number(form.peopleId),
+          ProjectID: form.projectId ? Number(form.projectId) : null,
           Amount: Number(form.amount),
           ExpenseDetail: form.title,
           Description: form.notes,
@@ -250,6 +290,34 @@ export default function EditExpensePage() {
                   label: p.PeopleName,
                 }))}
               />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField
+                  label="Sub Category"
+                  icon={<Tag size={18} />}
+                  name="subCategoryId"
+                  value={form.subCategoryId}
+                  onChange={handleChange}
+                  options={subCategories.map((s) => ({
+                    value: String(s.SubCategoryID),
+                    label: s.SubCategoryName,
+                  }))}
+                  required={false}
+                />
+
+                <SelectField
+                  label="Project"
+                  icon={<Tag size={18} />}
+                  name="projectId"
+                  value={form.projectId}
+                  onChange={handleChange}
+                  options={projects.map((p) => ({
+                    value: String(p.ProjectID),
+                    label: p.ProjectName,
+                  }))}
+                  required={false}
+                />
+              </div>
 
               {/* Payment Method */}
               <div>
@@ -388,54 +456,6 @@ function InputField({
             prefix ? "pl-16" : "pl-12"
           } pr-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] bg-[var(--surface)] text-[var(--foreground)]`}
         />
-      </div>
-    </div>
-  );
-}
-
-/* ================= SELECT ================= */
-
-function SelectField({
-  label,
-  options,
-  icon,
-  value,
-  onChange,
-  name,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string }>;
-  icon: React.ReactNode;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  name: string;
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
-        {label} <span className="text-rose-500">*</span>
-      </label>
-
-      <div className="relative group">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-2)] z-10">
-          {icon}
-        </span>
-
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          required
-          className="w-full border-2 border-[var(--border)] rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] bg-[var(--surface)] text-[var(--foreground)]"
-        >
-          <option value="">Select</option>
-
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
       </div>
     </div>
   );

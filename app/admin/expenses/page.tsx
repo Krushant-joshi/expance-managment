@@ -5,12 +5,12 @@ import {
   Calendar,
   Download,
   Filter,
-  MoreVertical,
   Search,
   TrendingUp,
   CreditCard,
   Smartphone,
   Banknote,
+  Plus,
 } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -44,7 +44,7 @@ export default function ExpensesPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
 
-  const categoryBadge = (_name?: string) =>
+  const categoryBadge = () =>
     "bg-[var(--surface-2)] text-[var(--foreground)] border-[var(--border)]";
 
   const categoryInitial = (name?: string) =>
@@ -117,7 +117,9 @@ export default function ExpensesPage() {
   ================================ */
 
   const filteredExpenses = expenses.filter((e) =>
-    e.ExpenseDetail?.toLowerCase().includes(search.toLowerCase()),
+    (e.ExpenseDetail || "Expense")
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
 
   const dateKey = (date: string) => {
@@ -156,18 +158,23 @@ export default function ExpensesPage() {
     });
 
   const handleExport = () => {
+    if (filtered.length === 0) {
+      alert("No filtered expenses to export");
+      return;
+    }
+
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
 
     doc.setFontSize(16);
     doc.text("All Expenses Report", 40, 40);
 
-    const tableBody = expenses.map((e) => [
+    const tableBody = filtered.map((e) => [
       `#${e.ExpenseID}`,
       e.ExpenseDetail || "Expense",
       formatDate(e.ExpenseDate),
       e.categories?.CategoryName || "N/A",
       e.PaymentMethod || "N/A",
-      `INR ${Number(e.Amount).toLocaleString()}`,
+      `₹ ${Number(e.Amount).toLocaleString()}`,
     ]);
 
     autoTable(doc, {
@@ -186,11 +193,11 @@ export default function ExpensesPage() {
   ================================ */
 
   return (
-    <div className="p-6 space-y-6 bg-[var(--background)] min-h-screen text-[var(--foreground)]">
+    <div className="min-h-screen space-y-6 bg-[var(--background)] text-[var(--foreground)]">
       {/* ================= Header ================= */}
 
-      <div className="bg-[var(--surface)] rounded-2xl p-6 shadow-sm border border-[var(--border)]">
-        <div className="flex items-center justify-between gap-4">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[var(--foreground)]">
               All Expenses
@@ -200,10 +207,17 @@ export default function ExpensesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/admin/expenses/add"
+              className="flex items-center justify-center gap-2 rounded-xl border border-[var(--border)] px-4 py-2 text-[var(--foreground)] shadow-sm transition-all hover:bg-[var(--surface-2)]"
+            >
+              <Plus size={16} />
+              Add Expense
+            </Link>
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 bg-[var(--accent)] text-[var(--accent-contrast)] px-4 py-2 rounded-xl hover:opacity-90 shadow-sm"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-[var(--accent-contrast)] shadow-[0_12px_24px_rgba(15,23,42,0.18)] transition-all hover:opacity-90"
             >
               <Download size={16} />
               Export
@@ -226,7 +240,7 @@ export default function ExpensesPage() {
           </div>
 
           <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            INR {totalExpense.toLocaleString()}
+            ₹ {totalExpense.toLocaleString()}
           </h2>
 
           <p className="text-xs mt-2 text-[var(--muted)]">
@@ -245,7 +259,7 @@ export default function ExpensesPage() {
           </div>
 
           <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            INR {monthTotal.toLocaleString()}
+            ₹ {monthTotal.toLocaleString()}
           </h2>
 
           <p className="text-xs mt-2 text-[var(--muted)]">
@@ -264,7 +278,7 @@ export default function ExpensesPage() {
           </div>
 
           <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            INR {avgPerDay}
+            ₹ {avgPerDay}
           </h2>
 
           <p className="text-xs mt-2 text-[var(--muted)]">
@@ -275,7 +289,7 @@ export default function ExpensesPage() {
 
       {/* ================= Filters ================= */}
 
-      <div className="bg-[var(--surface)] p-4 rounded-2xl shadow-sm border border-[var(--border)] flex flex-col md:flex-row md:items-center gap-3">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm md:flex-row md:items-center">
         <div className="relative flex-1 md:max-w-2xl">
           <Search
             size={18}
@@ -290,7 +304,7 @@ export default function ExpensesPage() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:ml-auto xl:flex xl:flex-wrap xl:items-center">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
@@ -326,11 +340,12 @@ export default function ExpensesPage() {
 
       {/* ================= Table ================= */}
 
-      <div className="bg-[var(--surface)] rounded-2xl shadow-sm border border-[var(--border)] overflow-x-auto">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
         {loading ? (
           <p className="p-6 text-center text-[var(--muted)]">Loading...</p>
         ) : (
           <>
+            <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead className="bg-[var(--surface-2)] border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
@@ -356,7 +371,7 @@ export default function ExpensesPage() {
               </thead>
 
               <tbody>
-                {filtered.map((item, index) => (
+                {filtered.map((item) => (
                   <tr
                     key={item.ExpenseID}
                     className="border-b border-[var(--border)] hover:bg-[var(--surface-2)] transition"
@@ -387,7 +402,7 @@ export default function ExpensesPage() {
 
                     <td className="px-4 py-4 align-middle">
                       <span
-                        className={`px-3 py-1 text-xs rounded-full border ${categoryBadge(item.categories?.CategoryName)}`}
+                        className={`px-3 py-1 text-xs rounded-full border ${categoryBadge()}`}
                       >
                         {item.categories?.CategoryName || "N/A"}
                       </span>
@@ -415,7 +430,7 @@ export default function ExpensesPage() {
                     </td>
 
                     <td className="px-4 py-4 align-middle text-right font-semibold text-[var(--foreground)]">
-                      INR {Number(item.Amount).toLocaleString()}
+                      ₹ {Number(item.Amount).toLocaleString()}
                     </td>
 
                     <td className="px-4 py-4 align-middle text-center">
@@ -423,10 +438,11 @@ export default function ExpensesPage() {
                         {/* EDIT */}
                         <Link
                           href={`/admin/expenses/edit/${item.ExpenseID}`}
-                          className="p-2 rounded-full hover:bg-[var(--surface-2)] text-blue-600"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#fbf4ea] text-[#8c6d3d] hover:bg-[#f6e8d5] transition-colors"
                           title="Edit"
                         >
                           <Pencil size={16} />
+                          Edit
                         </Link>
 
                         {/* DELETE */}
@@ -443,10 +459,67 @@ export default function ExpensesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
-            {/* ================= Footer ================= */}
+            <div className="space-y-3 p-3 md:hidden">
+              {filtered.map((item) => (
+                <article
+                  key={item.ExpenseID}
+                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] text-sm font-semibold text-[var(--foreground)]">
+                      {categoryInitial(item.categories?.CategoryName)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-[var(--foreground)]">
+                        {item.ExpenseDetail || "Expense"}
+                      </p>
+                      <p className="text-xs text-[var(--muted-2)]">ID: #{item.ExpenseID}</p>
+                    </div>
+                    <p className="text-right text-sm font-semibold text-[var(--foreground)]">
+                      Rs. {Number(item.Amount).toLocaleString()}
+                    </p>
+                  </div>
 
-            <div className="flex flex-col md:flex-row justify-between items-center p-4 text-sm text-[var(--muted)]">
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-[var(--muted-2)]">Date</p>
+                      <p className="mt-1 text-[var(--muted)]">{formatDate(item.ExpenseDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-[var(--muted-2)]">Category</p>
+                      <p className="mt-1 text-[var(--muted)]">
+                        {item.categories?.CategoryName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-xs uppercase tracking-wide text-[var(--muted-2)]">Payment</p>
+                      <p className="mt-1 text-[var(--muted)]">{item.PaymentMethod || "N/A"}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Link
+                      href={`/admin/expenses/edit/${item.ExpenseID}`}
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#fbf4ea] px-3 py-2 text-[#8c6d3d] transition-colors hover:bg-[#f6e8d5]"
+                    >
+                      <Pencil size={16} />
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(item.ExpenseID)}
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-red-600"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center justify-between gap-3 p-4 text-sm text-[var(--muted)] md:flex-row">
               <p className="mb-2 md:mb-0">
                 Showing 1-{filtered.length} of {expenses.length}{" "}
                 expenses

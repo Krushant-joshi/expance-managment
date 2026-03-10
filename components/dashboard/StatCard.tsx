@@ -4,25 +4,39 @@ interface Props {
   color: "indigo" | "emerald" | "amber" | "rose";
 }
 
-const colorMap = {
-  indigo: "border-[#6c7aa1] bg-[#f5f6fb] text-[#2a3352]",
-  emerald: "border-[#4aa38a] bg-[#f1fbf7] text-[#1f4b41]",
-  amber: "border-[#d1a85e] bg-[#fff8eb] text-[#5b3d19]",
-  rose: "border-[#cf6b7a] bg-[#fff1f2] text-[#5a1f2a]",
+const accentMap: Record<Props["color"], string> = {
+  indigo: "#818cf8",
+  emerald: "#34d399",
+  amber: "#d4af37",
+  rose: "#fb7185",
 };
 
 export default function StatCard({ title, value, color }: Props) {
+  const accent = accentMap[color];
+
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-6 shadow-[0_14px_30px_rgba(15,23,42,0.08)] border ${colorMap[color]}`}
+      className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--foreground)] shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
     >
-      <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+      <div
+        className="mb-3 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]"
+        style={{
+          borderColor: `${accent}66`,
+          backgroundColor: `${accent}1f`,
+          color: accent,
+        }}
+      >
         {title}
-      </p>
+      </div>
       <p className="text-3xl font-semibold mt-2">{value}</p>
 
       {/* Decorative blur */}
-      <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/60 rounded-full blur-2xl" />
+      <div
+        className="absolute -top-6 -right-6 h-24 w-24 rounded-full blur-2xl"
+        style={{
+          background: `radial-gradient(circle, ${accent}55 0%, transparent 70%)`,
+        }}
+      />
     </div>
   );
 }

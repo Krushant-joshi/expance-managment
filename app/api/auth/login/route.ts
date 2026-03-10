@@ -47,6 +47,8 @@ export async function POST(req: Request) {
       { expiresIn: "7d" }
     );
 
+    const roleName = user.RoleID === 1 ? "Administrator" : "User";
+
     // Create response
     const res = NextResponse.json({
       message: "Login successful",
@@ -55,6 +57,7 @@ export async function POST(req: Request) {
         name: user.UserName,
         email: user.EmailAddress,
         roleId: user.RoleID,
+        role: roleName,
       },
     });
 
@@ -66,6 +69,26 @@ export async function POST(req: Request) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
+
+    res.cookies.set(
+      "user",
+      encodeURIComponent(
+        JSON.stringify({
+          UserID: user.UserID,
+          UserName: user.UserName,
+          Email: user.EmailAddress,
+          RoleID: user.RoleID,
+          Role: roleName,
+        })
+      ),
+      {
+        httpOnly: false,
+        secure: false, // localhost
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      }
+    );
 
     return res;
 

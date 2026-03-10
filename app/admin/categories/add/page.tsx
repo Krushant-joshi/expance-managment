@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Save, X, Check, Loader2, LayoutGrid } from "lucide-react";
+import { getUserFromCookie } from "@/lib/userCookie";
 
 export default function AddCategoryPage() {
   const router = useRouter();
@@ -19,14 +20,9 @@ export default function AddCategoryPage() {
   // 🔹 Get logged-in user from cookie
   useEffect(() => {
     if (typeof document !== "undefined") {
-      const match = document.cookie.match(/user=([^;]+)/);
-      if (match) {
-        try {
-          const user = JSON.parse(decodeURIComponent(match[1]));
-          setForm((prev) => ({ ...prev, UserID: user.UserID }));
-        } catch (e) {
-          console.error("Failed to parse user cookie", e);
-        }
+      const user = getUserFromCookie(document.cookie);
+      if (user?.UserID) {
+        setForm((prev) => ({ ...prev, UserID: Number(user.UserID) || 0 }));
       }
     }
   }, []);
@@ -58,7 +54,8 @@ export default function AddCategoryPage() {
       if (res.ok) {
         router.push("/admin/categories");
       } else {
-        alert("Failed to add category");
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to add category");
       }
     } catch (err) {
       console.error(err);

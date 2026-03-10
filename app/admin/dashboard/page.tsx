@@ -14,41 +14,74 @@ type Expense = {
   categories?: { CategoryName: string };
 };
 
+type Income = {
+  IncomeID: number;
+  IncomeDate: string;
+  Amount: number;
+  IncomeDetail?: string;
+  categories?: { CategoryName: string };
+};
+
 export default function AdminDashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
 
   useEffect(() => {
-    fetch("/api/expenses")
-      .then((res) => res.json())
-      .then((data) => setExpenses(data))
-      .catch(() => setExpenses([]));
+    Promise.all([
+      fetch("/api/expenses")
+        .then((res) => res.json())
+        .catch(() => []),
+      fetch("/api/incomes")
+        .then((res) => res.json())
+        .catch(() => []),
+    ])
+      .then(([expenseData, incomeData]) => {
+        setExpenses(expenseData);
+        setIncomes(incomeData);
+      })
+      .catch(() => {
+        setExpenses([]);
+        setIncomes([]);
+      });
   }, []);
 
   const stats = useMemo(() => {
-    const total = expenses.reduce((sum, e) => sum + Number(e.Amount || 0), 0);
+    const totalExpense = expenses.reduce(
+      (sum, e) => sum + Number(e.Amount || 0),
+      0
+    );
+    const totalIncome = incomes.reduce((sum, i) => sum + Number(i.Amount || 0), 0);
     const now = new Date();
-    const thisMonth = expenses.filter((e) => {
+    const thisMonthExpenses = expenses.filter((e) => {
       const d = new Date(e.ExpenseDate);
       return (
         d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
       );
     });
-    const monthTotal = thisMonth.reduce(
+    const thisMonthIncomes = incomes.filter((i) => {
+      const d = new Date(i.IncomeDate);
+      return (
+        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      );
+    });
+    const monthExpense = thisMonthExpenses.reduce(
       (sum, e) => sum + Number(e.Amount || 0),
-      0,
+      0
     );
-    const uniqueDays = new Set(
-      thisMonth.map((e) => new Date(e.ExpenseDate).toDateString()),
-    ).size;
-    const avgPerDay = uniqueDays > 0 ? Math.round(monthTotal / uniqueDays) : 0;
-    const categories = new Set(
-      expenses
-        .map((e) => e.categories?.CategoryName)
-        .filter((c): c is string => Boolean(c)),
-    ).size;
+    const monthIncome = thisMonthIncomes.reduce(
+      (sum, i) => sum + Number(i.Amount || 0),
+      0
+    );
+    const netBalance = totalIncome - totalExpense;
 
-    return { total, monthTotal, avgPerDay, categories };
-  }, [expenses]);
+    return {
+      totalExpense,
+      totalIncome,
+      monthExpense,
+      monthIncome,
+      netBalance,
+    };
+  }, [expenses, incomes]);
 
   const lineData = useMemo(() => {
     const now = new Date();
@@ -79,6 +112,35 @@ export default function AdminDashboard() {
     return months.map((m) => ({ month: m.label, expense: m.total }));
   }, [expenses]);
 
+  const incomeLineData = useMemo(() => {
+    const now = new Date();
+    const months = Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0",
+      )}`;
+      return {
+        key,
+        label: d.toLocaleDateString("en-US", { month: "short" }),
+        total: 0,
+      };
+    });
+
+    const map = new Map(months.map((m) => [m.key, m]));
+    incomes.forEach((i) => {
+      const d = new Date(i.IncomeDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0",
+      )}`;
+      const bucket = map.get(key);
+      if (bucket) bucket.total += Number(i.Amount || 0);
+    });
+
+    return months.map((m) => ({ month: m.label, income: m.total }));
+  }, [incomes]);
+
   const pieData = useMemo(() => {
     const totals = new Map<string, number>();
     expenses.forEach((e) => {
@@ -90,6 +152,18 @@ export default function AdminDashboard() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 4);
   }, [expenses]);
+
+  const incomePieData = useMemo(() => {
+    const totals = new Map<string, number>();
+    incomes.forEach((i) => {
+      const name = i.categories?.CategoryName || "Uncategorized";
+      totals.set(name, (totals.get(name) || 0) + Number(i.Amount || 0));
+    });
+    return Array.from(totals.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }, [incomes]);
 
   const recent = useMemo(() => {
     return expenses
@@ -105,18 +179,32 @@ export default function AdminDashboard() {
       }));
   }, [expenses]);
 
+  const recentIncomes = useMemo(() => {
+    return incomes
+      .slice(0, 5)
+      .map((i) => ({
+        title: i.IncomeDetail || "Income",
+        date: new Date(i.IncomeDate).toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+        }),
+        category: i.categories?.CategoryName || "N/A",
+        amount: Number(i.Amount || 0).toLocaleString(),
+      }));
+  }, [incomes]);
+
   return (
     <div className="space-y-10">
       {/* Header */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)]/70 backdrop-blur px-6 py-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)]/70 px-5 py-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
         <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
           Executive Summary
         </p>
-        <h1 className="text-3xl font-semibold text-[var(--foreground)]">
-          Expense Dashboard
+        <h1 className="text-2xl font-semibold text-[var(--foreground)] sm:text-3xl">
+          Finance Dashboard
         </h1>
         <p className="text-[var(--muted)] mt-1">
-          Track, analyze and control your spending with clarity.
+          Track income, expense and net balance in one place.
         </p>
       </div>
 
@@ -124,22 +212,22 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <StatCard
           title="Total Expense"
-          value={stats.total.toLocaleString()}
+          value={stats.totalExpense.toLocaleString()}
           color="indigo"
         />
         <StatCard
-          title="This Month"
-          value={stats.monthTotal.toLocaleString()}
+          title="Total Income"
+          value={stats.totalIncome.toLocaleString()}
           color="emerald"
         />
         <StatCard
-          title="Avg / Day"
-          value={stats.avgPerDay.toLocaleString()}
+          title="Net Balance"
+          value={stats.netBalance.toLocaleString()}
           color="amber"
         />
         <StatCard
-          title="Categories"
-          value={stats.categories.toString()}
+          title="This Month (Net)"
+          value={(stats.monthIncome - stats.monthExpense).toLocaleString()}
           color="rose"
         />
       </div>
@@ -147,13 +235,41 @@ export default function AdminDashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <ExpenseLineChart data={lineData} />
+          <ExpenseLineChart
+            data={lineData}
+            title="Monthly Expenses"
+            subtitle="Expense Trend"
+            dataKey="expense"
+            lineColor="#9f7e54"
+          />
         </div>
-        <CategoryPieChart data={pieData} />
+        <CategoryPieChart
+          data={pieData}
+          title="Expense by Category"
+          subtitle="Expense Distribution"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ExpenseLineChart
+            data={incomeLineData}
+            title="Monthly Incomes"
+            subtitle="Income Trend"
+            dataKey="income"
+            lineColor="#3b7c6e"
+          />
+        </div>
+        <CategoryPieChart
+          data={incomePieData}
+          title="Income by Category"
+          subtitle="Income Distribution"
+        />
       </div>
 
       {/* Recent Expenses */}
       <RecentExpenses items={recent} />
+      <RecentExpenses items={recentIncomes} heading="Recent Incomes" />
     </div>
   );
 }

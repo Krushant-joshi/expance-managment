@@ -12,17 +12,30 @@ import {
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import SelectField from "@/components/form/SelectField";
+import { getUserFromCookie } from "@/lib/userCookie";
 
 /* ================= TYPES ================= */
 
 type Category = {
   CategoryID: number;
   CategoryName: string;
+  IsExpense?: boolean;
 };
 
 type People = {
   PeopleID: number;
   PeopleName: string;
+};
+
+type SubCategory = {
+  SubCategoryID: number;
+  SubCategoryName: string;
+};
+
+type Project = {
+  ProjectID: number;
+  ProjectName: string;
 };
 
 /* ================= MAIN ================= */
@@ -34,6 +47,9 @@ export default function AddExpensePage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [peoples, setPeoples] = useState<People[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [userId, setUserId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +57,9 @@ export default function AddExpensePage() {
     title: "",
     amount: "",
     categoryId: "",
+    subCategoryId: "",
     peopleId: "",
+    projectId: "",
     date: "",
     notes: "",
     paymentMethod: "",
@@ -50,15 +68,24 @@ export default function AddExpensePage() {
   /* ============ FETCH MASTER DATA ============ */
 
   useEffect(() => {
+    const user = getUserFromCookie(document.cookie);
+    const parsed = Number(user?.UserID);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      setUserId(parsed);
+    }
+
     fetchCategories();
     fetchPeoples();
+    fetchSubCategories();
+    fetchProjects();
   }, []);
 
   const fetchCategories = async () => {
     try {
       const res = await fetch("/api/categories");
-      const data = await res.json();
-      setCategories(data);
+      const data: Category[] = await res.json();
+      const expenseCategories = data.filter((cat) => cat.IsExpense === true);
+      setCategories(expenseCategories.length > 0 ? expenseCategories : data);
     } catch (err) {
       console.error("Category load error", err);
     }
@@ -71,6 +98,26 @@ export default function AddExpensePage() {
       setPeoples(data);
     } catch (err) {
       console.error("People load error", err);
+    }
+  };
+
+  const fetchSubCategories = async () => {
+    try {
+      const res = await fetch("/api/sub-categories");
+      const data = await res.json();
+      setSubCategories(data);
+    } catch (err) {
+      console.error("Sub category load error", err);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      const data = await res.json();
+      setProjects(data);
+    } catch (err) {
+      console.error("Project load error", err);
     }
   };
 
@@ -95,9 +142,10 @@ export default function AddExpensePage() {
       !form.amount ||
       !form.categoryId ||
       !form.peopleId ||
-      !form.date
+      !form.date ||
+      !userId
     ) {
-      alert("Please fill all required fields");
+      alert("Please fill all required fields and login again");
       return;
     }
 
@@ -113,13 +161,15 @@ export default function AddExpensePage() {
         body: JSON.stringify({
           ExpenseDate: form.date,
           CategoryID: Number(form.categoryId),
+          SubCategoryID: form.subCategoryId ? Number(form.subCategoryId) : null,
           PeopleID: Number(form.peopleId),
+          ProjectID: form.projectId ? Number(form.projectId) : null,
           Amount: Number(form.amount),
           ExpenseDetail: form.title,
           Description: form.notes,
           PaymentMethod: form.paymentMethod,
 
-          UserID: 1, // TODO: replace with login user
+          UserID: userId,
         }),
       });
 
@@ -144,8 +194,8 @@ export default function AddExpensePage() {
         {/* ================= HEADER ================= */}
 
         <div className="relative overflow-hidden rounded-3xl bg-[var(--surface)]/70 backdrop-blur border border-[var(--border)] p-8 text-[var(--foreground)] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#f2e7d6] rounded-full blur-2xl" />
-          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[#efe1cc] rounded-full blur-2xl" />
+          <div className="absolute -right-10 -top-10 w-40 h-40 bg-[var(--surface-2)]/90 rounded-full blur-2xl" />
+          <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-[var(--surface-2)]/70 rounded-full blur-2xl" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-3">
@@ -230,6 +280,34 @@ export default function AddExpensePage() {
                   label: p.PeopleName,
                 }))}
               />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SelectField
+                  label="Sub Category"
+                  icon={<Tag size={18} />}
+                  name="subCategoryId"
+                  value={form.subCategoryId}
+                  onChange={handleChange}
+                  options={subCategories.map((s) => ({
+                    value: String(s.SubCategoryID),
+                    label: s.SubCategoryName,
+                  }))}
+                  required={false}
+                />
+
+                <SelectField
+                  label="Project"
+                  icon={<Tag size={18} />}
+                  name="projectId"
+                  value={form.projectId}
+                  onChange={handleChange}
+                  options={projects.map((p) => ({
+                    value: String(p.ProjectID),
+                    label: p.ProjectName,
+                  }))}
+                  required={false}
+                />
+              </div>
 
               {/* Payment Method */}
               <div>
@@ -370,54 +448,6 @@ function InputField({
             prefix ? "pl-16" : "pl-12"
           } pr-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent bg-[var(--surface)] text-[var(--foreground)]`}
         />
-      </div>
-    </div>
-  );
-}
-
-/* ================= SELECT ================= */
-
-function SelectField({
-  label,
-  options,
-  icon,
-  value,
-  onChange,
-  name,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string }>;
-  icon: React.ReactNode;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  name: string;
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
-        {label} <span className="text-rose-500">*</span>
-      </label>
-
-      <div className="relative group">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-2)] z-10">
-          {icon}
-        </span>
-
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          required
-          className="w-full border-2 border-[var(--border)] rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent bg-[var(--surface)] text-[var(--foreground)]"
-        >
-          <option value="">Select</option>
-
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
       </div>
     </div>
   );

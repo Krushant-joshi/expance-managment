@@ -47,16 +47,22 @@ export async function PUT(
     }
 
     const body = await req.json();
+    const data: Record<string, string | number | null> = {};
+
+    if (typeof body.UserName === "string") data.UserName = body.UserName;
+    if (typeof body.EmailAddress === "string") data.EmailAddress = body.EmailAddress;
+    if (typeof body.MobileNo === "string") data.MobileNo = body.MobileNo;
+    if (typeof body.RoleID === "number") data.RoleID = body.RoleID;
+    if (typeof body.ProfileImage === "string" || body.ProfileImage === null) {
+      data.ProfileImage = body.ProfileImage;
+    }
+    if (typeof body.Password === "string" && body.Password.trim()) {
+      data.Password = body.Password;
+    }
 
     const updatedUser = await prisma.users.update({
       where: { UserID: userId },
-      data: {
-        UserName: body.UserName,
-        EmailAddress: body.EmailAddress,
-        Password: body.Password,
-        MobileNo: body.MobileNo,
-        RoleID: body.RoleID,
-      },
+      data,
     });
 
     return Response.json(updatedUser);

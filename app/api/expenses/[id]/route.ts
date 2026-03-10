@@ -56,7 +56,9 @@ export async function PUT(
         ExpenseDate: new Date(body.ExpenseDate),
 
         CategoryID: body.CategoryID || null,
+        SubCategoryID: body.SubCategoryID || null,
         PeopleID: body.PeopleID,
+        ProjectID: body.ProjectID || null,
 
         Amount: body.Amount,
 

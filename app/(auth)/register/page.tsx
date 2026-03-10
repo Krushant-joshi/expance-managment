@@ -69,7 +69,7 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err) {
+    } catch {
       setError("Something went wrong");
     }
 
@@ -78,77 +78,99 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <h2 className={styles.title}>Register</h2>
+      <div className={styles.shell}>
+        <section className={styles.hero}>
+          <div className={styles.heroTop}>
+            <span className={styles.badge}>ExpanceFlow Platform</span>
+            <h1 className={styles.heroTitle}>Finance Control Hub</h1>
+            <p className={styles.heroSubtitle}>
+              Create your account to capture receipts, manage budgets, and stay
+              on top of approvals.
+            </p>
+          </div>
+          <div className={styles.heroImage} aria-hidden="true" />
+        </section>
 
-        {/* Name */}
-        <input
-          className={styles.input}
-          type="text"
-          placeholder="Full Name"
-          name="UserName"
-          value={form.UserName}
-          onChange={handleChange}
-        />
+        <section className={styles.form}>
+          <div className={styles.cardHeader}>
+            <p className={styles.brand}>ExpanceFlow</p>
+            <h2 className={styles.title}>Create account</h2>
+            <p className={styles.subtitle}>
+              Start managing expenses in minutes.
+            </p>
+          </div>
 
-        {/* Email */}
-        <input
-          className={styles.input}
-          type="email"
-          placeholder="Email"
-          name="EmailAddress"
-          value={form.EmailAddress}
-          onChange={handleChange}
-        />
+          <label className={styles.label}>
+            Full name
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Full Name"
+              name="UserName"
+              value={form.UserName}
+              onChange={handleChange}
+            />
+          </label>
 
-        {/* Password */}
-        <input
-          className={styles.input}
-          type="password"
-          placeholder="Password"
-          name="Password"
-          value={form.Password}
-          onChange={handleChange}
-        />
+          <label className={styles.label}>
+            Email
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="you@company.com"
+              name="EmailAddress"
+              value={form.EmailAddress}
+              onChange={handleChange}
+            />
+          </label>
 
-        {/* Mobile */}
-        <input
-          className={styles.input}
-          type="text"
-          placeholder="Mobile Number (Optional)"
-          name="MobileNo"
-          value={form.MobileNo}
-          onChange={handleChange}
-        />
+          <label className={styles.label}>
+            Password
+            <input
+              className={styles.input}
+              type="password"
+              placeholder="********"
+              name="Password"
+              value={form.Password}
+              onChange={handleChange}
+            />
+          </label>
 
-        {/* Error */}
-        {error && <p className={styles.error}>{error}</p>}
+          <label className={styles.label}>
+            Mobile (optional)
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Mobile Number"
+              name="MobileNo"
+              value={form.MobileNo}
+              onChange={handleChange}
+            />
+          </label>
 
-        {/* Success */}
-        {success && (
-          <p style={{ color: "green", textAlign: "center" }}>{success}</p>
-        )}
+          {error && <p className={styles.error}>{error}</p>}
+          {success && <p className={styles.success}>{success}</p>}
 
-        {/* Button */}
-        <button
-          className={styles.button}
-          onClick={handleRegister}
-          disabled={loading}
-        >
-          {loading ? "Registering..." : "Register"}
-        </button>
-
-        {/* Login Link */}
-        <p style={{ textAlign: "center", marginTop: "10px" }}>
-          Already have an account?{" "}
-          <span
-            style={{ color: "#4f46e5", cursor: "pointer" }}
-            onClick={() => router.push("/login")}
+          <button
+            className={styles.button}
+            onClick={handleRegister}
+            disabled={loading}
           >
-            Login
-          </span>
-        </p>
+            {loading ? "Registering..." : "Register"}
+          </button>
+
+          <p className={styles.footerText}>
+            Already have an account?{" "}
+            <span
+              className={styles.link}
+              onClick={() => router.push("/login")}
+            >
+              Login
+            </span>
+          </p>
+        </section>
       </div>
     </div>
   );
 }
+
