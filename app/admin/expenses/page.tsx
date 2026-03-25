@@ -11,11 +11,13 @@ import {
   Smartphone,
   Banknote,
   Plus,
+  Wallet,
 } from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import StatCard from "@/components/dashboard/StatCard";
 
 /* ================================
    Types
@@ -228,63 +230,28 @@ export default function ExpensesPage() {
 
       {/* ================= Stats ================= */}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Total */}
-
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">Total Expense</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <TrendingUp size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {totalExpense.toLocaleString()}
-          </h2>
-
-          <p className="text-xs mt-2 text-[var(--muted)]">
-            +12% from last month
-          </p>
-        </div>
-
-        {/* Month */}
-
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">This Month</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <Calendar size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {monthTotal.toLocaleString()}
-          </h2>
-
-          <p className="text-xs mt-2 text-[var(--muted)]">
-            +8% from last month
-          </p>
-        </div>
-
-        {/* Avg */}
-
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">Avg / Day</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <TrendingUp size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {avgPerDay}
-          </h2>
-
-          <p className="text-xs mt-2 text-[var(--muted)]">
-            +5% from last month
-          </p>
-        </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <StatCard
+          title="Total Expense"
+          value={`Rs. ${totalExpense.toLocaleString()}`}
+          color="rose"
+          subtitle="Overall outgoing cash movement"
+          icon={Wallet}
+        />
+        <StatCard
+          title="This Month"
+          value={`Rs. ${monthTotal.toLocaleString()}`}
+          color="amber"
+          subtitle="Current month expense total"
+          icon={Calendar}
+        />
+        <StatCard
+          title="Avg / Day"
+          value={`Rs. ${avgPerDay.toLocaleString()}`}
+          color="indigo"
+          subtitle="Average spend per active day"
+          icon={TrendingUp}
+        />
       </div>
 
       {/* ================= Filters ================= */}

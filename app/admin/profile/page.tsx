@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CalendarClock, Camera, Mail, Phone, Save, User2 } from "lucide-react";
+import { setUserCookie } from "@/lib/userCookie";
 
 type Profile = {
   UserID: number;
@@ -41,6 +42,30 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const syncShellUser = (data: Profile) => {
+    setUserCookie({
+      UserID: data.UserID,
+      UserName: data.UserName,
+      Email: data.Email,
+      RoleID: data.RoleID,
+      Role: data.Role,
+      ProfileImage: data.ProfileImage || null,
+    });
+
+    window.dispatchEvent(
+      new CustomEvent("user-profile-updated", {
+        detail: {
+          UserID: data.UserID,
+          UserName: data.UserName,
+          Email: data.Email,
+          RoleID: data.RoleID,
+          Role: data.Role,
+          ProfileImage: data.ProfileImage || null,
+        },
+      })
+    );
+  };
+
   const handleSave = async () => {
     if (!profile) return;
     if (!name.trim()) {
@@ -72,6 +97,7 @@ export default function ProfilePage() {
       setName(latest.UserName || "");
       setMobile(latest.MobileNo || "");
       setProfileImage(latest.ProfileImage || "");
+      syncShellUser(latest);
       alert("Profile updated successfully");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to save profile");

@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Download, Filter, Search, TrendingUp, Plus } from "lucide-react";
+import {
+  Calendar,
+  Download,
+  Filter,
+  Search,
+  TrendingUp,
+  Plus,
+  HandCoins,
+} from "lucide-react";
 import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import StatCard from "@/components/dashboard/StatCard";
 
 type Income = {
   IncomeID: number;
@@ -167,42 +176,28 @@ export default function IncomesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">Total Income</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <TrendingUp size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {totalIncome.toLocaleString()}
-          </h2>
-        </div>
-
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">This Month</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <Calendar size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {monthTotal.toLocaleString()}
-          </h2>
-        </div>
-
-        <div className="bg-[var(--surface)] text-[var(--foreground)] p-6 rounded-2xl shadow-sm border border-[var(--border)] min-h-[140px]">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--muted)]">Avg / Day</p>
-            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
-              <TrendingUp size={18} className="text-[var(--muted)]" />
-            </div>
-          </div>
-          <h2 className="text-3xl font-semibold mt-3 leading-tight">
-            ₹ {avgPerDay}
-          </h2>
-        </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <StatCard
+          title="Total Income"
+          value={`Rs. ${totalIncome.toLocaleString()}`}
+          color="emerald"
+          subtitle="Overall incoming cash flow"
+          icon={HandCoins}
+        />
+        <StatCard
+          title="This Month"
+          value={`Rs. ${monthTotal.toLocaleString()}`}
+          color="amber"
+          subtitle="Current month income total"
+          icon={Calendar}
+        />
+        <StatCard
+          title="Avg / Day"
+          value={`Rs. ${avgPerDay.toLocaleString()}`}
+          color="indigo"
+          subtitle="Average income per active day"
+          icon={TrendingUp}
+        />
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm md:flex-row md:items-center">

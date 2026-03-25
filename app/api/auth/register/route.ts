@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { sendWelcomeEmail } from "@/lib/mailer";
+import { prisma } from "@/lib/prisma";
 
-/* ==========================
-   REGISTER USER
-========================== */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const {
+      UserName,
+      EmailAddress,
+      Password,
+      MobileNo,
+      RoleID,
+      ProfileImage,
+    } = body;
 
-    const { UserName, EmailAddress, Password, MobileNo, RoleID, ProfileImage,} = body;
-
-    // ✅ Validation
     if (!UserName || !EmailAddress || !Password) {
       return NextResponse.json(
         { error: "All fields are required" },
@@ -19,7 +22,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Check existing user
     const exists = await prisma.users.findUnique({
       where: { EmailAddress },
     });
@@ -31,27 +33,32 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Hash password
     const hashed = await bcrypt.hash(Password, 10);
 
-    // ✅ Save user
     const user = await prisma.users.create({
-  data: {
-    UserName,
-    EmailAddress,
-    Password: hashed,
-    MobileNo: MobileNo || "",
-    RoleID: RoleID || 2,        // default = user
-    ProfileImage: ProfileImage || null,
-  },
-});
-
-
-    return NextResponse.json({
-      message: "Registered successfully",
-      userId: user.UserID,
+      data: {
+        UserName,
+        EmailAddress,
+        Password: hashed,
+        MobileNo: MobileNo || "",
+        RoleID: RoleID || 2,
+        ProfileImage: ProfileImage || null,
+      },
     });
 
+    const emailResult = await sendWelcomeEmail({
+      to: user.EmailAddress,
+      name: user.UserName,
+    });
+
+    return NextResponse.json({
+      message: emailResult.sent
+        ? "Registered successfully. Welcome email sent."
+        : "Registered successfully.",
+      emailSent: emailResult.sent,
+      emailWarning: emailResult.reason,
+      userId: user.UserID,
+    });
   } catch (err) {
     console.error(err);
 

@@ -42,39 +42,62 @@ export default function AdminSidebar({
     return localStorage.getItem("sidebar-collapsed") === "true";
   });
 
-  const [user, setUser] = useState<{ UserName: string; Role: string; RoleID: number } | null>(
-    () => {
-      if (typeof document === "undefined") return null;
-      const parsed = getUserFromCookie(document.cookie);
-      const roleId = Number(parsed?.RoleID);
-      if (!parsed?.UserName || !parsed?.Role || !Number.isFinite(roleId)) {
-        return null;
-      }
-      return {
-        UserName: parsed.UserName,
-        Role: parsed.Role,
-        RoleID: roleId,
-      };
-    },
-  );
+  const [user, setUser] = useState<{
+    UserName: string;
+    Role: string;
+    RoleID: number;
+    ProfileImage?: string | null;
+  } | null>(() => {
+    if (typeof document === "undefined") return null;
+    const parsed = getUserFromCookie(document.cookie);
+    const roleId = Number(parsed?.RoleID);
+    if (!parsed?.UserName || !parsed?.Role || !Number.isFinite(roleId)) {
+      return null;
+    }
+    return {
+      UserName: parsed.UserName,
+      Role: parsed.Role,
+      RoleID: roleId,
+      ProfileImage: parsed.ProfileImage || null,
+    };
+  });
 
   useEffect(() => {
     let isMounted = true;
+
+    const syncUser = (data: {
+      UserName: string;
+      Role: string;
+      RoleID: number;
+      ProfileImage?: string | null;
+    }) => {
+      setUser({
+        UserName: data.UserName,
+        Role: data.Role,
+        RoleID: data.RoleID,
+        ProfileImage: data.ProfileImage || null,
+      });
+    };
 
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!isMounted || !data) return;
-        setUser({
-          UserName: data.UserName,
-          Role: data.Role,
-          RoleID: data.RoleID,
-        });
+        syncUser(data);
       })
       .catch(() => {});
 
+    const handleProfileUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (!customEvent.detail) return;
+      syncUser(customEvent.detail);
+    };
+
+    window.addEventListener("user-profile-updated", handleProfileUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("user-profile-updated", handleProfileUpdated);
     };
   }, []);
 
@@ -119,7 +142,7 @@ export default function AdminSidebar({
 
       <aside
         suppressHydrationWarning
-        className={`admin-shell-sidebar fixed inset-y-0 left-0 z-50 ${sidebarWidth} flex min-h-screen flex-col border-r border-[var(--border)] bg-[var(--surface)]/78 px-4 py-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-300 lg:sticky lg:top-0 lg:z-30 lg:translate-x-0 ${
+        className={`admin-shell-sidebar fixed inset-y-0 left-0 z-50 ${sidebarWidth} flex h-screen flex-col overflow-visible border-r border-[var(--border)] bg-[var(--surface)]/78 px-4 py-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-300 lg:sticky lg:top-0 lg:z-30 lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -152,29 +175,7 @@ export default function AdminSidebar({
           <div className="h-px bg-gradient-to-r from-[var(--ring)]/10 via-[var(--ring)]/60 to-transparent" />
         </div>
 
-        <div
-          className={`mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-4 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.12)] ${
-            collapsed ? "p-3" : "p-4"
-          }`}
-        >
-          <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-            <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)] text-lg font-bold text-[var(--accent-contrast)] shadow-lg">
-                {user?.UserName?.charAt(0) || "A"}
-              </div>
-              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[var(--surface)] bg-emerald-500" />
-            </div>
-            <div className={`flex-1 ${collapsed ? "hidden" : "block"}`}>
-              <p className="text-sm font-semibold text-[var(--foreground)]">
-                {user?.UserName || "Admin"}
-              </p>
-              <p className="text-xs text-[var(--muted)]">{user?.Role || "Administrator"}</p>
-            </div>
-            {!collapsed && <ChevronRight className="h-4 w-4 text-[var(--muted)]" />}
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-2 overflow-y-auto pr-1">
+        <nav className="flex-1 space-y-2 overflow-hidden pr-1">
           <p
             className={`mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--muted)] ${
               collapsed ? "px-0 text-center" : "px-3"

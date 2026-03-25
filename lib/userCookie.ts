@@ -4,6 +4,7 @@ type CookieUser = {
   Role?: string;
   RoleID?: number;
   Email?: string;
+  ProfileImage?: string | null;
 };
 
 function tryParseJson(value: string): CookieUser | null {
@@ -36,4 +37,12 @@ export function getUserFromCookie(cookieSource: string): CookieUser | null {
 
   const rawValue = match[1];
   return tryParseJson(rawValue) ?? tryParseJson(decodeRepeatedly(rawValue));
+}
+
+export function setUserCookie(user: CookieUser) {
+  if (typeof document === "undefined") return;
+
+  document.cookie = `user=${encodeURIComponent(
+    JSON.stringify(user)
+  )}; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax`;
 }
